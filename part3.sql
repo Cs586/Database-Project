@@ -27,13 +27,14 @@ group by State_Name
 -- Washington	53		009		0013		-50.000000		2012-10-17
 -- Texas		48		141		0050		106.041667		1991-07-28
 -- Texas		48		141		0050		106.291667		1991-07-25
-
+go
 
 SELECT distinct a.State_Name [State Name],t.State_Code [State Code],t.County_Code [County Code],t.Site_Num [Site Number],t.Average_Temp [Average Temp],t.Date_Local [Date Local] 
  FROM Temperature t
  LEFT JOIN aqs_sites a ON a.State_Code = t.State_Code and a.County_Code = t.County_Code and a.Site_Number = t.Site_Num 
  WHERE  t.Average_Temp <-39 or t.Average_Temp>105
 
+go
 
 -- 4.	You noticed that the average temperatures become questionable below -39 o and above 125 o and that it is unreasonable to have temperatures over 105 o for state codes 30, 29, 37, 26, 18, 38. You also decide that you are only interested in living in the United States, not Canada or the US territories. Create a view that combines the data in the AQS_Sites and Temperature tables. The view should have the appropriate SQL to exclude the data above. You should use this view for all subsequent queries.
 IF EXISTS(select * FROM sys.views where name = 'Refined_Temperature_Data')
@@ -132,8 +133,9 @@ state_rank  as
     t.State_Code = a.State_Code), 
 city_rank as 
     (SELECT City_Name, Site_Number,
-    RANK() OVER (ORDER BY
-    Average_Temp DESC
+    RANK() OVER (
+        PARTITION BY a.State_Name
+        ORDER BY Average_Temp DESC
     ) city_rank
     from Temperature t, AQS_Sites a
     where
