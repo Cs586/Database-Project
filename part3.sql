@@ -31,7 +31,7 @@ group by State_Name
 
 SELECT distinct a.State_Name [State Name],t.State_Code [State Code],t.County_Code [County Code],t.Site_Num [Site Number],t.Average_Temp [Average Temp],t.Date_Local [Date Local] 
  FROM Temperature t
- LEFT JOIN aqs_sites a ON a.State_Code = t.State_Code and a.County_Code = t.County_Code and a.Site_Number = t.Site_Num 
+ LEFT JOIN AQS_Sites a ON a.State_Code = t.State_Code and a.County_Code = t.County_Code and a.Site_Number = t.Site_Num 
  WHERE  t.Average_Temp <-39 or t.Average_Temp>105
 
 
@@ -172,6 +172,21 @@ c.Site_Number = a.Site_Number
 -- Mission	2	565		64.403861
 -- Mission	3	588		69.727512
 
+	SELECT a.City_Name [City Name],DATEPART(MONTH,t.Date_Local) [Month], Count(t.Average_Temp) [# of Records], AVG(Average_Temp) [Average Temp]
+	from Temperature t 
+	INNER JOIN AQS_Sites a on a.State_Code = a.State_Code and a.County_Code = t.County_Code and a.Site_Number = t.Site_Num
+	WHERE a.City_Name in ('Mission')
+	Group by a.City_Name,DATEPART(MONTH,t.Date_Local) 
+	Order by a.City_Name ,DATEPART(MONTH,t.Date_Local) 
+
+	--For 3 cities
+	SELECT a.City_Name [City Name],DATEPART(MONTH,t.Date_Local) [Month], Count(t.Average_Temp) [# of Records], AVG(Average_Temp) [Average Temp]
+	from Temperature t 
+	INNER JOIN AQS_Sites a on a.State_Code = t.State_Code and a.County_Code = t.County_Code and a.Site_Number = t.Site_Num
+	WHERE a.City_Name in ('Mission','Pinellas Park','Tucson')
+	Group by a.City_Name,DATEPART(MONTH,t.Date_Local) 
+	Order by a.City_Name ,DATEPART(MONTH,t.Date_Local) 
+
 -- 11.	You assume that the temperatures follow a normal distribution and that the majority of the temperatures will fall within the 40% to 60% range of the cumulative distribution. Using the CUME_DIST function, show the temperatures for the same 3 cities that fall within the range.
 
 -- City_Name	Avg_Temp	Temp_Cume_Dist
@@ -179,12 +194,41 @@ c.Site_Number = a.Site_Number
 -- Mission	73.956522	0.400829994275902
 -- Mission	73.958333	0.402404121350887 
 
+	SELECT A.City_Name [City_Name], A.Average_Temp [Avg_Temp], A.CumeDist [Temp_Cume_Dist]
+	FROM
+	(
+	SELECT distinct a.City_Name, Average_Temp, 
+	CUME_DIST () OVER (PARTITION BY a.city_name ORDER BY Average_Temp) AS CumeDist
+	from Temperature t
+	INNER JOIN AQS_Sites a on a.State_Code = a.State_Code and a.County_Code = a.County_Code and a.Site_Number = t.Site_Num
+	Where City_Name in ('Mission','Pinellas Park','Tucson')
+	) A
+	Where ROUND(A.CumeDist,3)> 0.400 and ROUND(A.CumeDist,3)< 0.600
+	Order by A.City_Name,A.Average_Temp,A.CumeDist
+
 -- 12.	You decide this is helpful, but too much information. You decide to write a query that shows the first temperature and the last temperature that fall within the 40% and 60% range for the 3 cities your focusing on.
 
 -- City_Name	40 Percentile Temp	60 Percentile Temp
 -- Mission	73.956522		80.083333
 -- Pinellas Park	71.958333		78.125000
 -- Tucson	63.750000		74.250000
+
+	SELECT AB.City_Name,MIN(AB.Avg_Temp) [40 Percentile Temp],MAX(AB.Avg_Temp) [60 Percentile Temp]
+	FROM
+	(
+		SELECT A.City_Name [City_Name], A.Average_Temp [Avg_Temp], A.CumeDist,A.PercentRank
+		FROM
+		(
+		SELECT distinct a.City_Name, Average_Temp, 
+		CUME_DIST () OVER (PARTITION BY a.city_name ORDER BY Average_Temp) AS CumeDist,
+		PERCENT_RANK() OVER (PARTITION BY a.city_name ORDER BY Average_Temp ) as PercentRank
+		from Temperature t
+		INNER JOIN AQS_Sites a on a.State_Code = t.State_Code and a.County_Code = t.County_Code and a.Site_Number = t.Site_Num
+		Where City_Name in ('Mission','Pinellas Park','Tucson')
+		) A
+		Where ROUND(A.PercentRank,4)> 0.400 and ROUND(A.PercentRank,4)< 0.600
+	)AB  
+	Group by AB.City_Name
 
 -- 13.	You remember from your statistics classes that to get a smoother distribution of the temperatures and eliminate the small daily changes that you should use a moving average instead of the actual temperatures. Using the windowing within a ranking function to create a 4 day moving average, calculate the moving average for each day of the year. 
 
@@ -199,3 +243,15 @@ c.Site_Number = a.Site_Number
 -- Mission	365			61.726333
 -- Mission	366			61.972514 
 
+	SELECT AB.[City Name],AB.DayYear,
+	AVG(AB.Temp) over(partition by AB.[City Name] order by AB.DayYear rows between 3 preceding and 1 following) as [Rolling Avg Temp]
+	FROM
+	(
+	SELECT a.City_Name [City Name],DATEPART(DAYOFYEAR,Date_Local) [DayYear],AVG(Average_Temp) [Temp]
+	from Temperature t 
+	INNER JOIN AQS_Sites a on a.State_Code = t.State_Code and a.County_Code = t.County_Code and a.Site_Number = t.Site_Num
+	WHERE a.City_Name in ('Mission','Pinellas Park','Tucson')
+	 group by a.City_Name, DATEPART(DAYOFYEAR,Date_Local)
+	 ) AB
+	order by AB.[City Name],AB.DayYear
+	GO
