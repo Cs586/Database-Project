@@ -22,10 +22,10 @@ IF EXISTS(SELECT 1 FROM sys.columns
           WHERE Name = N'GeoLocation'
           AND Object_ID = Object_ID(N'dbo.GunCrimes'))
 BEGIN
-    alter table AQS_Sites drop COLUMN GeoLocation;
+    alter table GunCrimes drop COLUMN GeoLocation;
 END
 go
-alter table dbo.AQS_Sites add GeoLocation GEOGRAPHY;
+alter table dbo.GunCrimes add GeoLocation GEOGRAPHY;
 go
 
 UPDATE [dbo].[AQS_Sites]
