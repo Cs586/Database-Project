@@ -1,10 +1,10 @@
 use Weather
 Alter table AQS_Sites alter Column latitude float
-
 Alter table AQS_Sites alter Column longitude float
+Alter table Guncrimes alter Column latitude float
+Alter table Guncrimes alter Column longitude float
 
 Alter table Guncrimes alter Column n_injured float
-
 Alter table Guncrimes alter Column n_killed float
 
 
@@ -29,6 +29,10 @@ alter table dbo.GunCrimes add GeoLocation GEOGRAPHY;
 go
 
 UPDATE [dbo].[AQS_Sites]
+SET [GeoLocation] = geography::STPointFromText('POINT(' + CAST([Longitude] AS VARCHAR(50)) + ' ' + CAST([Latitude] AS VARCHAR(50)) + ')', 4326)
+where Latitude <> 0 and Longitude <> 0
+go
+UPDATE [dbo].GunCrimes
 SET [GeoLocation] = geography::STPointFromText('POINT(' + CAST([Longitude] AS VARCHAR(50)) + ' ' + CAST([Latitude] AS VARCHAR(50)) + ')', 4326)
 where Latitude <> 0 and Longitude <> 0
 go
