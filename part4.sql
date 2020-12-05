@@ -9,10 +9,10 @@ alter table dbo.AQS_Sites add [GeoLocation] GEOGRAPHY
 go
 
 UPDATE [dbo].[AQS_Sites]
-SET [GeoLocation] = geography::Point([Latitude], [Longitude], 4326)
+SET [GeoLocation] = geography::STPointFromText('POINT(' + convert(varchar, [Longitude]) + ' ' + 
+                    convert(varchar, [Latitude]) + ')', 4326)
 where Latitude <> 0 and Longitude <> 0
 go
-
 IF EXISTS ( SELECT  *
             FROM    sys.objects
             WHERE   object_id = OBJECT_ID(N'WZ285_Fall2020_Calc_GEO_Distance')
