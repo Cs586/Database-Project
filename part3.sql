@@ -147,15 +147,38 @@ s.Site_Number = c.Site_Number
 and
 c.Site_Number = a.Site_Number
 
-
-
-
-
-
 -- 8.	You notice in the results that sites with Not in a City as the City Name are include but do not provide you useful information. Exclude these sites from all future answers. You can do this by either adding it to the where clause in the remaining queries or updating the view you created in #4
 
 --  
-
+go
+With 
+state_rank  as
+    (SELECT
+        State_Name, Site_Number,
+        RANK () OVER ( 
+            ORDER BY Average_Temp DESC
+        ) state_rank
+    FROM
+        Temperature t , AQS_Sites a
+    where 
+    t.State_Code = a.State_Code), 
+city_rank as 
+    (SELECT City_Name, Site_Number,
+    RANK() OVER (
+        PARTITION BY a.State_Name
+        ORDER BY Average_Temp DESC
+    ) city_rank
+    from Temperature t, AQS_Sites a
+    where
+    t.Site_Num = a.Site_Number
+)
+select s.State_Name, state_rank, c.City_Name, city_rank from state_rank s, city_rank c, AQS_Sites a
+where 
+s.Site_Number = c.Site_Number
+and
+c.Site_Number = a.Site_Number
+and
+c.City_Name <> 'Not in a City'
 
 -- 9.	You’ve decided that the results in #8 provided too much information and you only want to 2 cities with the highest temperatures and group the results by state rank then city rank. 
 
@@ -164,6 +187,38 @@ c.Site_Number = a.Site_Number
 -- 1		Florida		2			Valrico			71.729440
 -- 2		Louisiana	1			Baton Rouge		69.704466
 -- 2		Louisiana	2			Laplace (La Place)	68.115400
+
+go
+With 
+state_rank  as
+    (SELECT
+        State_Name, Site_Number,
+        RANK () OVER ( 
+            ORDER BY Average_Temp DESC
+        ) state_rank
+    FROM
+        Temperature t , AQS_Sites a
+    where 
+    t.State_Code = a.State_Code), 
+city_rank as 
+    (SELECT City_Name, Site_Number,
+    RANK() OVER (
+        PARTITION BY a.State_Name
+        ORDER BY Average_Temp DESC
+    ) city_rank
+    from Temperature t, AQS_Sites a
+    where
+    t.Site_Num = a.Site_Number
+)
+select s.State_Name, state_rank, c.City_Name, city_rank from state_rank s, city_rank c, AQS_Sites a
+where 
+s.Site_Number = c.Site_Number
+and
+c.Site_Number = a.Site_Number
+and
+c.City_Name <> 'Not in a City'
+and
+city_rank <= 2
 
 -- 10.	You decide you like the average temperature to be in the 80's. Pick 3 cities that meets this condition and calculate the average temperature by month for those 3cities. You also decide to include a count of the number of records for each of the cities to make sure your comparisons are being made with comparable data for each city. 
 
@@ -177,7 +232,7 @@ c.Site_Number = a.Site_Number
 	SELECT a.City_Name [City Name],DATEPART(MONTH,t.Date_Local) [Month], Count(t.Average_Temp) [# of Records], AVG(Average_Temp) [Average Temp]
 	from Temperature t 
 	INNER JOIN AQS_Sites a on a.State_Code = a.State_Code and a.County_Code = t.County_Code and a.Site_Number = t.Site_Num
-	WHERE a.City_Name in ('Mission')
+	WHERE a.City_Name in ('Mission') and City_Name <> 'Not in a City'
 	Group by a.City_Name,DATEPART(MONTH,t.Date_Local) 
 	Order by a.City_Name ,DATEPART(MONTH,t.Date_Local) 
 
@@ -185,7 +240,7 @@ c.Site_Number = a.Site_Number
 	SELECT a.City_Name [City Name],DATEPART(MONTH,t.Date_Local) [Month], Count(t.Average_Temp) [# of Records], AVG(Average_Temp) [Average Temp]
 	from Temperature t 
 	INNER JOIN AQS_Sites a on a.State_Code = t.State_Code and a.County_Code = t.County_Code and a.Site_Number = t.Site_Num
-	WHERE a.City_Name in ('Mission','Pinellas Park','Tucson')
+	WHERE a.City_Name in ('Mission','Pinellas Park','Tucson') and City_Name <> 'Not in a City'
 	Group by a.City_Name,DATEPART(MONTH,t.Date_Local) 
 	Order by a.City_Name ,DATEPART(MONTH,t.Date_Local) 
 
@@ -203,7 +258,7 @@ c.Site_Number = a.Site_Number
 	CUME_DIST () OVER (PARTITION BY a.city_name ORDER BY Average_Temp) AS CumeDist
 	from Temperature t
 	INNER JOIN AQS_Sites a on a.State_Code = a.State_Code and a.County_Code = a.County_Code and a.Site_Number = t.Site_Num
-	Where City_Name in ('Mission','Pinellas Park','Tucson')
+	Where City_Name in ('Mission','Pinellas Park','Tucson') and City_Name <> 'Not in a City'
 	) A
 	Where ROUND(A.CumeDist,3)> 0.400 and ROUND(A.CumeDist,3)< 0.600
 	Order by A.City_Name,A.Average_Temp,A.CumeDist
@@ -226,7 +281,7 @@ c.Site_Number = a.Site_Number
 		PERCENT_RANK() OVER (PARTITION BY a.city_name ORDER BY Average_Temp ) as PercentRank
 		from Temperature t
 		INNER JOIN AQS_Sites a on a.State_Code = t.State_Code and a.County_Code = t.County_Code and a.Site_Number = t.Site_Num
-		Where City_Name in ('Mission','Pinellas Park','Tucson')
+		Where City_Name in ('Mission','Pinellas Park','Tucson') and City_Name <> 'Not in a City'
 		) A
 		Where ROUND(A.PercentRank,4)> 0.400 and ROUND(A.PercentRank,4)< 0.600
 	)AB  
@@ -252,7 +307,7 @@ c.Site_Number = a.Site_Number
 	SELECT a.City_Name [City Name],DATEPART(DAYOFYEAR,Date_Local) [DayYear],AVG(Average_Temp) [Temp]
 	from Temperature t 
 	INNER JOIN AQS_Sites a on a.State_Code = t.State_Code and a.County_Code = t.County_Code and a.Site_Number = t.Site_Num
-	WHERE a.City_Name in ('Mission','Pinellas Park','Tucson')
+	WHERE a.City_Name in ('Mission','Pinellas Park','Tucson') and City_Name <> 'Not in a City'
 	 group by a.City_Name, DATEPART(DAYOFYEAR,Date_Local)
 	 ) AB
 	order by AB.[City Name],AB.DayYear
