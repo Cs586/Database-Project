@@ -74,16 +74,21 @@ END
 GO 
 
 
+Begin
+DECLARE @h GEOGRAPHY;
+    SET @h = geography::STGeomFromText('POINT(' + '-86.472891' + ' ' + '32.437458' + ')', 4326);
 With ST as
-(select count(g.incident_characteristics)as N,convert(varchar(8000),g.GeoLocation)as Names
-	from GunCrimes g 
-	where incident_characteristics like 'shot%' and
-	g.GeoLocation.STDistance(g.GeoLocation)< (10 * 1609.344)
-	group by convert(varchar(8000),g.GeoLocation))
-select top(1000) (Site_Number+'-'+State_Name+'-'+a.Address) as Local_Site_Name, City_Name, year(date) as Crime_year
-	, count(s.N) as Shooting_Count
-	from GunCrimes g,AQS_Sites a, ST s
-where g.GeoLocation.STDistance(g.GeoLocation)=a.GeoLocation.STDistance(a.GeoLocation) and
-	convert(varchar(8000),a.GeoLocation)= s.Names
+(select count(g.incident_id)as N,g.GeoLocation.STDistance(@h) as Names
+	from GunCrimes g, AQS_Sites a
+	where incident_characteristics like 'shot%' and 
+	g.GeoLocation.STDistance(@h)< (10 * 16000)
+	group by g.GeoLocation.STDistance(@h)),
+AQ as 
+(Select Site_Number,State_Name,a.Address, City_Name,a.GeoLocation.STDistance(@h) as NS from AQS_Sites a)
+select (Site_Number+'-'+State_Name+'-'+a.Address) as Local_Site_Name, City_Name, year(date) as Crime_year
+	, sum(s.N) as Shooting_Count
+	from GunCrimes g,AQ a, ST s
+where NS = s.Names
 Group by year(date),City_Name,(Site_Number+'-'+State_Name+'-'+a.Address)
-Order by Shooting_Count,year(date),City_Name;
+Order by shooting_count,(Site_Number+'-'+State_Name+'-'+a.Address),year(date),City_Name;
+END
