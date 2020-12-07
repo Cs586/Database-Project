@@ -81,7 +81,7 @@ go
 with samp as (
     select count(distinct incident_id) [shooting_count], 
     concat(convert(varchar,Site_Number),'-',State_Name,'-',a.Address) as Local_Site_Name,
-    City_Name, year(date) as Crime_year from GunCrimes g, AQS_Sites a
+    City_Name, State_Name, year(date) as Crime_year from GunCrimes g, AQS_Sites a
     where 
     g.Geodistance <= (10 * 1600)
     and
@@ -90,11 +90,14 @@ with samp as (
     incident_characteristics like 'Shot%'
     group by
     concat(convert(varchar,Site_Number),'-',State_Name,'-',a.Address),
-    City_Name,
+    City_Name, State_Name,
     year(date)
 )
-select Local_Site_Name,City_Name,Crime_Year,Shooting_Count from samp
 
-
+select Local_Site_Name, City_Name, Crime_Year, Shooting_Count, Rank()OVER(
+PARTITION BY State_Name
+ORDER BY Shooting_Count
+) Shooting_Count_Rank
+from samp
 
 select geodistance, City_Name from AQS_Sites
