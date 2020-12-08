@@ -99,5 +99,3 @@ PARTITION BY State_Name
 ORDER BY Shooting_Count
 ) Shooting_Count_Rank
 from samp
-
-select geodistance, City_Name from AQS_Sites
