@@ -104,6 +104,119 @@ ORDER BY State_rank
 -- (777 row(s) affected)
 -- Complete Question 6 before Index Create At - 13:45:18
 
+DECLARE @StartTime datetime
+DECLARE @EndTime datetime
+SELECT @StartTime = GETDATE()
+
+/* Display print required before statement */
+Print 'Before Question 6, the execution of the query started at - ' + (CAST(convert(varchar,getdate(),108) AS nvarchar(30)))
+
+/* Query of Question #2 */
+SELECT State_Name, MIN(Average_Temp) AS [MINIMUM TEMP], MAX(Average_Temp) AS [MAX TEMP], AVG(Average_Temp) AS [TEMP AVG]
+FROM Temperature, AQS_Sites
+WHERE Temperature.State_Code = AQS_Sites.State_Code AND Temperature.County_Code = AQS_Sites.County_Code AND Temperature.Site_Num = AQS_Sites.Site_Number
+GROUP BY State_Name
+ORDER BY State_Name
+
+SELECT @EndTime=GETDATE()
+PRINT 'Before Question 6, the execution of the query ended at - ' + (CAST(convert(varchar,getdate(),108) AS nvarchar(30)))
+
+/* Provide the execution time in milliseconds before indexing */
+PRINT 'The execution time in milliseconds before Indexing: ' +(CAST(convert(varchar,DATEDIFF(millisecond,@StartTime,@EndTime),108) AS nvarchar(30)))
+
+/* Check to see if the Average_Temp_Index exists before and create it if it doesn't */
+GO
+BEGIN
+	IF EXISTS (SELECT *  FROM SYS.INDEXES
+	WHERE name in (N'Average_Temp_Index') AND object_id = OBJECT_ID('dbo.Temperature'))
+	BEGIN
+		DROP INDEX Average_Temp_Index ON Temperature
+	END
+END
+
+/* Next create index for Average_Temp column in Temperature table */
+GO
+Create Index Average_Temp_Index ON Temperature (Average_Temp)
+
+/* Checking if the Daily_High_Temp_Index exists before creating it */
+GO
+BEGIN
+	IF EXISTS (SELECT *  FROM SYS.INDEXES
+	WHERE name in (N'Daily_High_Temp_Index') AND object_id = OBJECT_ID('dbo.Temperature'))
+	BEGIN
+		DROP INDEX Daily_High_Temp_Index ON Temperature
+	END
+END
+
+/* Creating index for Daily_High_Temp column in Temperature table */
+GO
+Create Index Daily_High_Temp_Index ON Temperature (Daily_High_Temp)
+
+/* Checking if the Date_Local_Index exists before creating it */
+GO
+BEGIN
+	IF EXISTS (SELECT *  FROM SYS.INDEXES
+	WHERE name in (N'Date_Local_Index') AND object_id = OBJECT_ID('dbo.Temperature'))
+	BEGIN
+		DROP INDEX Date_Local_Index ON Temperature
+	END
+END
+
+/* Creating index for Date_Local column in Temperature table */
+GO
+Create Index Date_Local_Index ON Temperature (Date_Local)
+
+/* Checking if the State_County_Site_Code_Temp_Index exists before creating it */
+GO
+	BEGIN
+	IF EXISTS (SELECT *  FROM SYS.INDEXES
+	WHERE name in (N'State_County_Site_Code_Temp_Index') AND object_id = OBJECT_ID('dbo.Temperature'))
+	BEGIN
+		DROP INDEX State_County_Site_Code_Temp_Index ON Temperature
+	END
+END
+
+/* Creating Indexes on County_Code, State_Code, Site_Num in Temperature table */
+GO
+Create Index State_County_Site_Code_Temp_Index ON Temperature (State_Code, County_Code, Site_Num)
+
+/* Checking if the State_County_Site_Code_AQS_Index exists before creating it */
+GO
+BEGIN
+	IF EXISTS (SELECT *  FROM SYS.INDEXES
+	WHERE name in (N'State_County_Site_Code_AQS_Index') AND object_id = OBJECT_ID('dbo.aqs_sites'))
+	BEGIN
+		DROP INDEX State_County_Site_Code_AQS_Index ON aqs_sites
+	END
+END
+
+/* Creating Indexes on County_Code, State_Code, Site_Num in aqs_sites table */
+GO
+Create Index State_County_Site_Code_AQS_Index ON AQ (State_Code,county_code, Site_Number)
+
+/* The portion below after all indexing is completed */
+GO
+DECLARE @StartTimeAfterIndex datetime
+DECLARE @EndTimeAfterIndex datetime
+SELECT @StartTimeAfterIndex = GETDATE()
+
+Print 'After Question 6, the execution of the query started at - ' + (CAST(CONVERT(VARCHAR, GETDATE(),108) AS NVARCHAR(30)))
+
+/* Query of Question 2 --> AGAIN! */
+
+SELECT State_Name,MIN(Average_Temp) AS [Minimum_Temp], MAX(Average_Temp) AS [Maximum_Temp], AVG(Average_Temp) AS [Temp_Avg]
+FROM Temperature , AQS_Sites
+WHERE Temperature.State_Code = AQS_Sites.State_Code AND Temperature.County_Code = AQS_Sites.County_Code AND Temperature.Site_Num = AQS_Sites.Site_Number
+GROUP BY State_Name
+ORDER BY State_Name
+
+SELECT @EndTimeAfterIndex=GETDATE()
+PRINT 'After Question 6, the execution of the query ended at - ' + (CAST(CONVERT(VARCHAR, GETDATE(),108) AS NVARCHAR(30)))
+
+/* This query gives the execution time in milliseconds afer indexing */
+PRINT 'The execution time in milliseconds after Indexing: ' +
+		(CAST(CONVERT(VARCHAR,DATEDIFF(MILLISECOND, @StartTimeAfterIndex,@EndTimeAfterIndex),108) AS nvarchar(30)))
+
 
 
 
