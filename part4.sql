@@ -1,3 +1,4 @@
+use Weather
 IF EXISTS(SELECT 1 FROM sys.columns 
           WHERE Name = N'GeoLocation'
           AND Object_ID = Object_ID(N'dbo.AQS_Sites'))
@@ -30,22 +31,31 @@ as
 Begin
     SET NOCOUNT ON; 
     DECLARE @h GEOGRAPHY
-    SET @h = geography::STGeomFromText('POINT(' + @Longitude + ' ' + @Latitude + ')', 4326);
+    SET @h = geography::STGeomFromText('POINT(' + @Latitude  + ' ' +  @Longitude + ')', 4326);
     with calculate_distance
     as
     (select 
     TOP (@rownum) GeoLocation.STDistance(@h) as [Distance_In_Meters], 
-    GeoLocation.STDistance(@h)/80000 as [Hours_of_Travel], 
+    GeoLocation.STDistance(@h)/80000 as [Hours_of_Travel],
+    State_Name,
     (CASE
     when Local_Site_Name is null or Local_Site_Name = ''
     Then concat(convert(varchar, Site_Number), City_Name) 
     else Local_Site_Name
-    end) [Local_Site_Names]
+    end) as [Local_Site_Names],
+    Zip_Code,
+    Latitude, Longitude
+
     from AQS_Sites
     where State_Name = @State
     AND GeoLocation IS NOT NULL
     )
-    select [Distance_In_Meters], Hours_of_Travel, Local_Site_Names from calculate_distance
+    select [Distance_In_Meters], Hours_of_Travel, Local_Site_Names,
+    State_Name,
+    Zip_Code,
+    Latitude, Longitude 
+    from calculate_distance
+    where Zip_Code is not null 
 END
 GO 
 EXEC WZ285_Fall2020_Calc_GEO_Distance @longitude='-86.472891', @latitude='32.437458', @State="Alabama", @rownum=1000
