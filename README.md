@@ -6,4 +6,4 @@
 
 
 # View our Interactive Tableau dashboard
-[link to Dashboard!](https://tommywenjiezhang.github.io/Database-Project/)
+# [link to Dashboard!](https://tommywenjiezhang.github.io/Database-Project/)
