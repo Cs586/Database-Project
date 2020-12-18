@@ -7,5 +7,5 @@
 
 # View our Interactive Tableau dashboard
 
-![Tableau Stored Procedure](./graph_screenshoot.png)
+![Tableau Stored Procedure](./tableau_screenshot.png)
 # [link to Dashboard!](https://tommywenjiezhang.github.io/Database-Project/)
